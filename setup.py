@@ -15,20 +15,27 @@ class CMakeExtension(Extension):
         self.sourcedir = os.path.abspath(sourcedir)
 
 
+def find_cmake():
+    """Find a working cmake executable, preferring system cmake over the pip wrapper."""
+    candidates = ["/usr/bin/cmake", "/usr/local/bin/cmake", "cmake"]
+    for candidate in candidates:
+        try:
+            subprocess.check_output([candidate, "--version"], stderr=subprocess.DEVNULL)
+            return candidate
+        except (OSError, subprocess.CalledProcessError):
+            pass
+    raise RuntimeError("CMake must be installed to build pymcc_lidar")
+
+
 class cmake_build_ext(build_ext):
     def run(self):
-        try:
-            out = subprocess.check_output(["cmake", "--version"])
-        except OSError:
-            raise RuntimeError(
-                "CMake must be installed to build the following extensions: "
-                + ", ".join(e.name for e in self.extensions)
-            )
+        cmake_exe = find_cmake()
 
         for ext in self.extensions:
             self.build_extension(ext)
 
     def build_extension(self, ext):
+        cmake_exe = find_cmake()
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = [
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
@@ -56,10 +63,10 @@ class cmake_build_ext(build_ext):
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
         subprocess.check_call(
-            ["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env
+            [cmake_exe, ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env
         )
         subprocess.check_call(
-            ["cmake", "--build", "."] + build_args, cwd=self.build_temp
+            [cmake_exe, "--build", "."] + build_args, cwd=self.build_temp
         )
         print()  # Add an empty line for cleaner output
 
@@ -83,8 +90,8 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_require=">=3.6",
-    install_requires=["cmake", "cython"],
-    ext_modules=[CMakeExtension("pymcc-lidar")],
+    install_requires=["cython"],
+    ext_modules=[CMakeExtension("pymcc_lidar")],
     cmdclass={"build_ext": cmake_build_ext},
     packages=setuptools.find_packages(),
     ext_package=".",
