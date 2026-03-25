@@ -134,14 +134,15 @@ namespace mcc
       tn = omp_get_thread_num();
       while (!sstop)
       {
-        /* Threads update the shared counter by turns */
+        const Cell *cell;
+        /* Threads update the shared counter and advance the iterator by turns */
         #pragma omp critical
         {
           sj++;      // increment the shared loop counter...
           tj = sj;   // ...and keep a private copy of it
+          cell = regions->getNextCell();
         }
 
-        const Cell *cell = regions->getNextCell();
         if(!cell) {
           sstop = 1;
           #pragma omp flush(sstop)
@@ -183,6 +184,7 @@ namespace mcc
           //std::cout << "updating progress bar" << std::endl;
           //progressBar.update(nSplinesComputed);
           //std::cout << "updated progress bar" << std::endl;
+          delete cell;
         }
         /* When sstop=1, most threads continue to this statment */
       }
