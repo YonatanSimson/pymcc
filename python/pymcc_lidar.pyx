@@ -20,15 +20,11 @@ def classify(np.ndarray[double, ndim=2, mode='c'] xyz not None,
     cdef double resolution = scaleDomain2Spacing
     cdef double thresh = curvatureThreshold
     cdef int32_t n = m_xyz
-    cdef Py_ssize_t i
 
     with nogil:
         classification = pymcc_classify(&cx[0], &cy[0], &cz[0], n, resolution, thresh)
 
-    cdef np.ndarray[int32_t, ndim=1] np_classification = np.empty(n, dtype=np.int32)
-    for i in range(n):
-        np_classification[i] = classification[i]
-
+    np_classification = np.asarray(<int[:n]>classification).copy()
     pymcc_free_int(classification)
     return np_classification
 
@@ -48,14 +44,10 @@ def calculate_excess_height(np.ndarray[double, ndim=2, mode='c'] xyz not None,
     cdef double *h
     cdef double resolution = scaleDomainSpacing
     cdef int32_t n = m_xyz
-    cdef Py_ssize_t i
 
     with nogil:
         h = pymcc_pass(&cx[0], &cy[0], &cz[0], n, resolution)
 
-    cdef np.ndarray[double, ndim=1] np_h = np.empty(m_xyz)
-    for i in range(m_xyz):
-        np_h[i] = h[i]
-
+    np_h = np.asarray(<double[:n]>h).copy()
     pymcc_free_double(h)
     return np_h
