@@ -194,7 +194,6 @@ namespace mcc
     int nDuplicatesPutAside = duplicatePoints.putAsideAllButOnePointPerSet();
     nDuplicatesPutAside = splinePoints.removeClassified();
 
-
     LineIndent indent("  ");
 
     std::cout << "Scale domain: " << scaleDomainSpacing << std::endl;

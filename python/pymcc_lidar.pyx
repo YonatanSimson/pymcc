@@ -1,7 +1,6 @@
 import numpy as np
 cimport pymcc_lidar
 cimport numpy as np
-from libc.stdlib cimport malloc, free
 
 
 def classify(np.ndarray[double, ndim=2, mode='c'] xyz not None,
@@ -13,26 +12,24 @@ def classify(np.ndarray[double, ndim=2, mode='c'] xyz not None,
 
     assert n_xyz == 3
 
-    cdef int * classification;
-    cdef double resolution = scaleDomain2Spacing;
-    cdef double thresh = curvatureThreshold;
-    cdef int32_t n = m_xyz;
-    cdef double *x = <double *> malloc(n * sizeof(double));
-    cdef double *y = <double *> malloc(n * sizeof(double));
-    cdef double *z = <double *> malloc(n * sizeof(double));
+    cdef np.ndarray[double, ndim=1, mode='c'] cx = np.ascontiguousarray(xyz[:, 0])
+    cdef np.ndarray[double, ndim=1, mode='c'] cy = np.ascontiguousarray(xyz[:, 1])
+    cdef np.ndarray[double, ndim=1, mode='c'] cz = np.ascontiguousarray(xyz[:, 2])
 
-    for i in range(n):
-        x[i] = xyz[i, 0]
-        y[i] = xyz[i, 1]
-        z[i] = xyz[i, 2]
+    cdef int * classification
+    cdef double resolution = scaleDomain2Spacing
+    cdef double thresh = curvatureThreshold
+    cdef int32_t n = m_xyz
+    cdef Py_ssize_t i
 
     with nogil:
-        classification = pymcc_classify(x, y, z, n, resolution, thresh);
+        classification = pymcc_classify(&cx[0], &cy[0], &cz[0], n, resolution, thresh)
 
-    cdef np.ndarray[int32_t, ndim=1] np_classification = np.empty(n, dtype=np.int32);
+    cdef np.ndarray[int32_t, ndim=1] np_classification = np.empty(n, dtype=np.int32)
     for i in range(n):
         np_classification[i] = classification[i]
 
+    pymcc_free_int(classification)
     return np_classification
 
 
@@ -44,27 +41,21 @@ def calculate_excess_height(np.ndarray[double, ndim=2, mode='c'] xyz not None,
 
     assert n_xyz == 3
 
-    cdef double *h;
-    cdef double resolution = scaleDomainSpacing;
-    cdef int32_t n = m_xyz;
-    cdef double *x = <double *> malloc(n * sizeof(double));
-    cdef double *y = <double *> malloc(n * sizeof(double));
-    cdef double *z = <double *> malloc(n * sizeof(double));
+    cdef np.ndarray[double, ndim=1, mode='c'] cx = np.ascontiguousarray(xyz[:, 0])
+    cdef np.ndarray[double, ndim=1, mode='c'] cy = np.ascontiguousarray(xyz[:, 1])
+    cdef np.ndarray[double, ndim=1, mode='c'] cz = np.ascontiguousarray(xyz[:, 2])
 
-    for i in range(n):
-        x[i] = xyz[i, 0]
-        y[i] = xyz[i, 1]
-        z[i] = xyz[i, 2]
+    cdef double *h
+    cdef double resolution = scaleDomainSpacing
+    cdef int32_t n = m_xyz
+    cdef Py_ssize_t i
 
     with nogil:
-        h = pymcc_pass(x, y, z, n, resolution);
+        h = pymcc_pass(&cx[0], &cy[0], &cz[0], n, resolution)
 
-    cdef np.ndarray[double, ndim=1] np_h = np.empty(m_xyz);
+    cdef np.ndarray[double, ndim=1] np_h = np.empty(m_xyz)
     for i in range(m_xyz):
         np_h[i] = h[i]
 
-    free(x);
-    free(y);
-    free(z);
-
+    pymcc_free_double(h)
     return np_h

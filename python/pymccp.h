@@ -8,4 +8,7 @@ typedef signed int int32_t;
 int * pymcc_classify(double *x, double *y, double *z, int32_t n, double scaleDomain2Spacing, double curvatureThreshold);
 double * pymcc_pass(double *x, double *y, double *z, int32_t n, double scaleDomainSpacing);
 
+void pymcc_free_int(int *p);
+void pymcc_free_double(double *p);
+
 #endif // PYMCCP_H
